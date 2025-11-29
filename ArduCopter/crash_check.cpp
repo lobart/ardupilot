@@ -55,30 +55,10 @@ void Copter::crash_check()
     }
 #endif
 
-    // vehicle not crashed if 1hz filtered acceleration is more than 3m/s (1G on Z-axis has been subtracted)
-    const float filtered_acc = land_accel_ef_filter.get().length();
-    if (filtered_acc >= CRASH_CHECK_ACCEL_MAX) {
-        crash_counter = 0;
-        return;
-    }
-
-    // check for lean angle over 15 degrees
-    const float lean_angle_deg = degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()));
-    if (lean_angle_deg <= CRASH_CHECK_ANGLE_MIN_DEG) {
-        crash_counter = 0;
-        return;
-    }
-
-    // check for angle error over 30 degrees
-    const float angle_error = attitude_control->get_att_error_angle_deg();
-    if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
-        crash_counter = 0;
-        return;
-    }
-
-    // check for speed under 10m/s (if available)
-    Vector3f vel_ned;
-    if (ahrs.get_velocity_NED(vel_ned) && (vel_ned.length() >= CRASH_CHECK_SPEED_MAX)) {
+    // check for pitch and roll angles over 15 degrees
+    const bool check_roll = (ahrs.get_roll() > M_PI_4) || (ahrs.get_roll() < -M_PI_4);
+    const bool check_pitch = (ahrs.get_pitch() > M_PI_4) || (ahrs.get_pitch() < -M_PI_4);
+    if (!check_roll && !check_pitch) {
         crash_counter = 0;
         return;
     }
@@ -90,7 +70,7 @@ void Copter::crash_check()
     if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
         // send message to gcs
-        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: AngErr=%.0f>%.0f, Accel=%.1f<%.1f", angle_error, CRASH_CHECK_ANGLE_DEVIATION_DEG, filtered_acc, CRASH_CHECK_ACCEL_MAX);
+        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: AngErr=%.0f>%.0f, Accel=%.1f<%.1f", CRASH_CHECK_ANGLE_DEVIATION_DEG, CRASH_CHECK_ACCEL_MAX);
         // disarm motors
         copter.arming.disarm(AP_Arming::Method::CRASH);
     }
