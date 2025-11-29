@@ -70,7 +70,7 @@ void Copter::crash_check()
     if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
         // send message to gcs
-        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: AngErr=%.0f>%.0f, Accel=%.1f<%.1f", CRASH_CHECK_ANGLE_DEVIATION_DEG, CRASH_CHECK_ACCEL_MAX);
+        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming");
         // disarm motors
         copter.arming.disarm(AP_Arming::Method::CRASH);
     }
